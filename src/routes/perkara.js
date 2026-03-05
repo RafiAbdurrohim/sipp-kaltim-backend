@@ -27,11 +27,32 @@ router.get("/", async (req, res) => {
 
 // POST tambah perkara (admin)
 router.post("/", auth, async (req, res) => {
-  const { no_perkara, penggugat, tergugat, obyek_sengketa, tahap_persiapan, putusan_pertama, putusan_banding, putusan_kasasi, putusan_pk, status, tgl_daftar } = req.body;
+  const {
+    no_perkara,
+    penggugat,
+    tergugat,
+    obyek_sengketa,
+    tahap_persiapan,
+    putusan_pertama,
+    putusan_banding,
+    putusan_kasasi,
+    putusan_pk,
+    status,
+    tgl_daftar,
+    tgl_pemeriksaan,
+    tgl_banding,
+    tgl_kasasi,
+    tgl_pk,
+    tgl_selesai,
+    ket_pertama,
+    ket_banding,
+    ket_kasasi,
+    ket_pk,
+  } = req.body;
   try {
     const result = await pool.query(
       `INSERT INTO perkara (no_perkara, penggugat, tergugat, obyek_sengketa, tahap_persiapan, putusan_pertama, putusan_banding, putusan_kasasi, putusan_pk, status, tgl_daftar)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+ VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
       [no_perkara, penggugat, tergugat, obyek_sengketa, tahap_persiapan, putusan_pertama, putusan_banding, putusan_kasasi, putusan_pk, status, tgl_daftar],
     );
     res.status(201).json({ success: true, data: result.rows[0] });
@@ -44,14 +65,59 @@ router.post("/", auth, async (req, res) => {
 // PUT edit perkara (admin)
 router.put("/:id", auth, async (req, res) => {
   const { id } = req.params;
-  const { no_perkara, penggugat, tergugat, obyek_sengketa, tahap_persiapan, putusan_pertama, putusan_banding, putusan_kasasi, putusan_pk, status, tgl_daftar } = req.body;
+  const {
+    no_perkara,
+    penggugat,
+    tergugat,
+    obyek_sengketa,
+    tahap_persiapan,
+    putusan_pertama,
+    putusan_banding,
+    putusan_kasasi,
+    putusan_pk,
+    status,
+    tgl_daftar,
+    tgl_pemeriksaan,
+    tgl_banding,
+    tgl_kasasi,
+    tgl_pk,
+    tgl_selesai,
+    ket_pertama,
+    ket_banding,
+    ket_kasasi,
+    ket_pk,
+  } = req.body;
   try {
     const result = await pool.query(
       `UPDATE perkara SET no_perkara=$1, penggugat=$2, tergugat=$3, obyek_sengketa=$4,
-       tahap_persiapan=$5, putusan_pertama=$6, putusan_banding=$7, putusan_kasasi=$8,
-       putusan_pk=$9, status=$10, tgl_daftar=$11, updated_at=NOW()
-       WHERE id=$12 RETURNING *`,
-      [no_perkara, penggugat, tergugat, obyek_sengketa, tahap_persiapan, putusan_pertama, putusan_banding, putusan_kasasi, putusan_pk, status, tgl_daftar, id],
+ tahap_persiapan=$5, putusan_pertama=$6, putusan_banding=$7, putusan_kasasi=$8,
+ putusan_pk=$9, status=$10, tgl_daftar=$11, tgl_pemeriksaan=$12, tgl_banding=$13,
+ tgl_kasasi=$14, tgl_pk=$15, tgl_selesai=$16, ket_pertama=$17, ket_banding=$18,
+ ket_kasasi=$19, ket_pk=$20, updated_at=NOW()
+ WHERE id=$21 RETURNING *`,
+      [
+        no_perkara,
+        penggugat,
+        tergugat,
+        obyek_sengketa,
+        tahap_persiapan,
+        putusan_pertama,
+        putusan_banding,
+        putusan_kasasi,
+        putusan_pk,
+        status,
+        tgl_daftar,
+        tgl_pemeriksaan || null,
+        tgl_banding || null,
+        tgl_kasasi || null,
+        tgl_pk || null,
+        tgl_selesai || null,
+        ket_pertama || null,
+        ket_banding || null,
+        ket_kasasi || null,
+        ket_pk || null,
+        id,
+      ],
     );
     if (!result.rows.length) return res.status(404).json({ success: false, message: "Data tidak ditemukan." });
     res.json({ success: true, data: result.rows[0] });
