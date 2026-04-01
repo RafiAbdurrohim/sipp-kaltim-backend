@@ -1,140 +1,144 @@
-const express = require("express");
-const router = express.Router();
-const pool = require("../db");
-const auth = require("../middleware/authMiddleware");
+const express = require('express')
+const router = express.Router()
+const pool = require('../db')
+const auth = require('../middleware/authMiddleware')
 
 // GET semua perkara (publik)
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const { search, status } = req.query;
-    let query = "SELECT * FROM perkara WHERE 1=1";
-    const params = [];
+    const { search, status } = req.query
+    let query = 'SELECT * FROM perkara WHERE 1=1'
+    const params = []
     if (search) {
-      params.push(`%${search}%`);
-      query += ` AND (no_perkara ILIKE $${params.length} OR penggugat ILIKE $${params.length} OR tergugat ILIKE $${params.length})`;
+      params.push(`%${search}%`)
+      query += ` AND (no_tingkat_pertama ILIKE $${params.length} OR penggugat ILIKE $${params.length} OR tergugat ILIKE $${params.length})`
     }
-    if (status && status !== "Semua") {
-      params.push(status);
-      query += ` AND status = $${params.length}`;
+    if (status && status !== 'Semua') {
+      params.push(status)
+      query += ` AND status = $${params.length}`
     }
-    query += " ORDER BY created_at DESC";
-    const result = await pool.query(query, params);
-    res.json({ success: true, data: result.rows, total: result.rows.length });
+    query += ' ORDER BY created_at DESC'
+    const result = await pool.query(query, params)
+    res.json({ success: true, data: result.rows, total: result.rows.length })
   } catch (err) {
-    res.status(500).json({ success: false, message: "Kesalahan server." });
+    console.error(err)
+    res.status(500).json({ success: false, message: 'Kesalahan server.' })
   }
-});
+})
 
 // POST tambah perkara (admin)
-router.post("/", auth, async (req, res) => {
+router.post('/', auth, async (req, res) => {
   const {
-    no_perkara,
-    penggugat,
-    tergugat,
-    obyek_sengketa,
-    tahap_persiapan,
-    putusan_pertama,
-    putusan_banding,
-    putusan_kasasi,
-    putusan_pk,
-    status,
-    tgl_daftar,
-    tgl_pemeriksaan,
-    tgl_banding,
-    tgl_kasasi,
-    tgl_pk,
-    tgl_selesai,
-    ket_pertama,
-    ket_banding,
-    ket_kasasi,
-    ket_pk,
-  } = req.body;
+    no_tingkat_pertama, no_banding, no_kasasi, no_pk,
+    penggugat, tergugat, obyek_sengketa,
+    tahap_persiapan, putusan_pertama, putusan_banding, putusan_kasasi, putusan_pk,
+    status, status_data, tgl_daftar,
+    tgl_diajukan_pertama, tgl_diputuskan_pertama,
+    tgl_diajukan_banding, tgl_diputuskan_banding,
+    tgl_diajukan_kasasi, tgl_diputuskan_kasasi,
+    tgl_diajukan_pk, tgl_diputuskan_pk,
+    tgl_diajukan_inkracht, tgl_diputuskan_inkracht,
+    ket_pertama, ket_banding, ket_kasasi, ket_pk
+  } = req.body
   try {
     const result = await pool.query(
-      `INSERT INTO perkara (no_perkara, penggugat, tergugat, obyek_sengketa, tahap_persiapan, putusan_pertama, putusan_banding, putusan_kasasi, putusan_pk, status, tgl_daftar)
- VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-      [no_perkara, penggugat, tergugat, obyek_sengketa, tahap_persiapan, putusan_pertama, putusan_banding, putusan_kasasi, putusan_pk, status, tgl_daftar],
-    );
-    res.status(201).json({ success: true, data: result.rows[0] });
+      `INSERT INTO perkara (
+        no_tingkat_pertama, no_banding, no_kasasi, no_pk,
+        penggugat, tergugat, obyek_sengketa,
+        tahap_persiapan, putusan_pertama, putusan_banding, putusan_kasasi, putusan_pk,
+        status, status_data, tgl_daftar,
+        tgl_diajukan_pertama, tgl_diputuskan_pertama,
+        tgl_diajukan_banding, tgl_diputuskan_banding,
+        tgl_diajukan_kasasi, tgl_diputuskan_kasasi,
+        tgl_diajukan_pk, tgl_diputuskan_pk,
+        tgl_diajukan_inkracht, tgl_diputuskan_inkracht,
+        ket_pertama, ket_banding, ket_kasasi, ket_pk
+      ) VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,
+        $16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29
+      ) RETURNING *`,
+      [
+        no_tingkat_pertama||null, no_banding||null, no_kasasi||null, no_pk||null,
+        penggugat, tergugat, obyek_sengketa,
+        tahap_persiapan, putusan_pertama, putusan_banding, putusan_kasasi, putusan_pk,
+        status, status_data||'TUN', tgl_daftar,
+        tgl_diajukan_pertama||null, tgl_diputuskan_pertama||null,
+        tgl_diajukan_banding||null, tgl_diputuskan_banding||null,
+        tgl_diajukan_kasasi||null, tgl_diputuskan_kasasi||null,
+        tgl_diajukan_pk||null, tgl_diputuskan_pk||null,
+        tgl_diajukan_inkracht||null, tgl_diputuskan_inkracht||null,
+        ket_pertama||null, ket_banding||null, ket_kasasi||null, ket_pk||null
+      ]
+    )
+    res.status(201).json({ success: true, data: result.rows[0] })
   } catch (err) {
-    if (err.code === "23505") return res.status(400).json({ success: false, message: "Nomor perkara sudah ada." });
-    res.status(500).json({ success: false, message: "Kesalahan server." });
+    console.error(err)
+    res.status(500).json({ success: false, message: 'Kesalahan server.' })
   }
-});
+})
 
 // PUT edit perkara (admin)
-router.put("/:id", auth, async (req, res) => {
-  const { id } = req.params;
+router.put('/:id', auth, async (req, res) => {
+  const { id } = req.params
   const {
-    no_perkara,
-    penggugat,
-    tergugat,
-    obyek_sengketa,
-    tahap_persiapan,
-    putusan_pertama,
-    putusan_banding,
-    putusan_kasasi,
-    putusan_pk,
-    status,
-    tgl_daftar,
-    tgl_pemeriksaan,
-    tgl_banding,
-    tgl_kasasi,
-    tgl_pk,
-    tgl_selesai,
-    ket_pertama,
-    ket_banding,
-    ket_kasasi,
-    ket_pk,
-  } = req.body;
+    no_tingkat_pertama, no_banding, no_kasasi, no_pk,
+    penggugat, tergugat, obyek_sengketa,
+    tahap_persiapan, putusan_pertama, putusan_banding, putusan_kasasi, putusan_pk,
+    status, status_data, tgl_daftar,
+    tgl_diajukan_pertama, tgl_diputuskan_pertama,
+    tgl_diajukan_banding, tgl_diputuskan_banding,
+    tgl_diajukan_kasasi, tgl_diputuskan_kasasi,
+    tgl_diajukan_pk, tgl_diputuskan_pk,
+    tgl_diajukan_inkracht, tgl_diputuskan_inkracht,
+    ket_pertama, ket_banding, ket_kasasi, ket_pk
+  } = req.body
   try {
     const result = await pool.query(
-      `UPDATE perkara SET no_perkara=$1, penggugat=$2, tergugat=$3, obyek_sengketa=$4,
- tahap_persiapan=$5, putusan_pertama=$6, putusan_banding=$7, putusan_kasasi=$8,
- putusan_pk=$9, status=$10, tgl_daftar=$11, tgl_pemeriksaan=$12, tgl_banding=$13,
- tgl_kasasi=$14, tgl_pk=$15, tgl_selesai=$16, ket_pertama=$17, ket_banding=$18,
- ket_kasasi=$19, ket_pk=$20, updated_at=NOW()
- WHERE id=$21 RETURNING *`,
+      `UPDATE perkara SET
+        no_tingkat_pertama=$1, no_banding=$2, no_kasasi=$3, no_pk=$4,
+        penggugat=$5, tergugat=$6, obyek_sengketa=$7,
+        tahap_persiapan=$8, putusan_pertama=$9, putusan_banding=$10,
+        putusan_kasasi=$11, putusan_pk=$12, status=$13, status_data=$14,
+        tgl_daftar=$15,
+        tgl_diajukan_pertama=$16, tgl_diputuskan_pertama=$17,
+        tgl_diajukan_banding=$18, tgl_diputuskan_banding=$19,
+        tgl_diajukan_kasasi=$20, tgl_diputuskan_kasasi=$21,
+        tgl_diajukan_pk=$22, tgl_diputuskan_pk=$23,
+        tgl_diajukan_inkracht=$24, tgl_diputuskan_inkracht=$25,
+        ket_pertama=$26, ket_banding=$27, ket_kasasi=$28, ket_pk=$29,
+        updated_at=NOW()
+      WHERE id=$30 RETURNING *`,
       [
-        no_perkara,
-        penggugat,
-        tergugat,
-        obyek_sengketa,
-        tahap_persiapan,
-        putusan_pertama,
-        putusan_banding,
-        putusan_kasasi,
-        putusan_pk,
-        status,
-        tgl_daftar,
-        tgl_pemeriksaan || null,
-        tgl_banding || null,
-        tgl_kasasi || null,
-        tgl_pk || null,
-        tgl_selesai || null,
-        ket_pertama || null,
-        ket_banding || null,
-        ket_kasasi || null,
-        ket_pk || null,
-        id,
-      ],
-    );
-    if (!result.rows.length) return res.status(404).json({ success: false, message: "Data tidak ditemukan." });
-    res.json({ success: true, data: result.rows[0] });
+        no_tingkat_pertama||null, no_banding||null, no_kasasi||null, no_pk||null,
+        penggugat, tergugat, obyek_sengketa,
+        tahap_persiapan, putusan_pertama, putusan_banding, putusan_kasasi, putusan_pk,
+        status, status_data||'TUN', tgl_daftar,
+        tgl_diajukan_pertama||null, tgl_diputuskan_pertama||null,
+        tgl_diajukan_banding||null, tgl_diputuskan_banding||null,
+        tgl_diajukan_kasasi||null, tgl_diputuskan_kasasi||null,
+        tgl_diajukan_pk||null, tgl_diputuskan_pk||null,
+        tgl_diajukan_inkracht||null, tgl_diputuskan_inkracht||null,
+        ket_pertama||null, ket_banding||null, ket_kasasi||null, ket_pk||null,
+        id
+      ]
+    )
+    if (!result.rows.length) return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    res.json({ success: true, data: result.rows[0] })
   } catch (err) {
-    res.status(500).json({ success: false, message: "Kesalahan server." });
+    console.error(err)
+    res.status(500).json({ success: false, message: 'Kesalahan server.' })
   }
-});
+})
 
 // DELETE hapus perkara (admin)
-router.delete("/:id", auth, async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
-    const result = await pool.query("DELETE FROM perkara WHERE id=$1 RETURNING *", [req.params.id]);
-    if (!result.rows.length) return res.status(404).json({ success: false, message: "Data tidak ditemukan." });
-    res.json({ success: true, message: "Perkara berhasil dihapus." });
+    const result = await pool.query('DELETE FROM perkara WHERE id=$1 RETURNING *', [req.params.id])
+    if (!result.rows.length) return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    res.json({ success: true, message: 'Perkara berhasil dihapus.' })
   } catch (err) {
-    res.status(500).json({ success: false, message: "Kesalahan server." });
+    res.status(500).json({ success: false, message: 'Kesalahan server.' })
   }
-});
+})
 
-module.exports = router;
+module.exports = router
